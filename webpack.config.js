@@ -10,11 +10,6 @@ class ExperimentalPlugin {
   }
 }
 
-// enhanced-resolve leaves its default hooks at stage 0. The important thing
-// here is that we want to put some things earlier and some later than those.
-const beforeDefault = -10;
-const afterDefaults = 10;
-
 class ResolverPlugin {
   apply(resolver) {
     // raw-resolve -> internal-resolve is the same place in the pipeline that
@@ -54,7 +49,10 @@ class ResolverPlugin {
       // built-in NextPlugin. Instead we want to behave like the built-in
       // AliasPlugin that implements resolve.fallback -- it comes after
       // NextPlugin.
-      { name: "my-resolver-plugin", stage: afterDefaults },
+      //
+      // The number just needs to be greater than zero to come after the
+      // defaults (tapable assigned them stage 0 by default).
+      { name: "my-resolver-plugin", stage: 10 },
       async (request, context, callback) => {
         let target = resolver.ensureHook("internal-resolve");
         if (request.request.endsWith("1")) {
