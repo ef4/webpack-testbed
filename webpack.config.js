@@ -1,5 +1,7 @@
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const VirtualModulesPlugin = require("webpack-virtual-modules");
+const path = require("path");
+const { fallback } = require("./common");
 
 class ExperimentalPlugin {
   apply(compiler) {
@@ -26,9 +28,12 @@ class ResolverPlugin {
   }
 
   _alias(original) {
+    // demonstrate priority aliasing
     if (original === "#made-up-package") {
       return "./made-up-package.js";
     }
+
+    // and emitting virtual modules (which will be our solution for externals)
     if (original === "my-virtual-package") {
       this.vfs.writeModule(
         "node_modules/my-virtual-package/index.js",
@@ -37,9 +42,10 @@ class ResolverPlugin {
     }
   }
 
-  _fallback(original) {
-    if (original.endsWith("1")) {
-      return original.replace(/1$/, "2");
+  // demonstrate resolving *from* a different package than the real one
+  _rehome(original, fromPath) {
+    if (original === "co" && fromPath === path.resolve(__dirname, "src")) {
+      return path.resolve(__dirname, "../embroider");
     }
   }
 
@@ -50,9 +56,9 @@ class ResolverPlugin {
     resolver
       .getHook("raw-resolve")
       .tapAsync("my-resolver-plugin", async (request, context, callback) => {
+        let target = resolver.ensureHook("internal-resolve");
         let aliased = this._alias(request.request);
         if (aliased) {
-          let target = resolver.ensureHook("internal-resolve");
           let newRequest = {
             ...request,
             request: aliased,
@@ -69,9 +75,30 @@ class ResolverPlugin {
               return callback();
             }
           );
-        } else {
-          callback();
+          return;
         }
+
+        let rehomed = this._rehome(request.request, request.path);
+        if (rehomed) {
+          let newRequest = {
+            ...request,
+            path: rehomed,
+          };
+          resolver.doResolve(
+            target,
+            newRequest,
+            "my experiment",
+            context,
+            (err, result) => {
+              if (err) return callback(err);
+              if (result) return callback(null, result);
+              return callback();
+            }
+          );
+          return;
+        }
+
+        callback();
       });
 
     // described-resolve -> internal-resolve is the same place in the pipeline
@@ -87,7 +114,7 @@ class ResolverPlugin {
       // defaults (tapable assigned them stage 0 by default).
       { name: "my-resolver-plugin", stage: 10 },
       async (request, context, callback) => {
-        let aliased = this._fallback(request.request);
+        let aliased = fallback(request.request);
         if (aliased) {
           let target = resolver.ensureHook("internal-resolve");
           let newRequest = {
