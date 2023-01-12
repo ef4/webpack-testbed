@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "start:rollup": "rollup --watch --config ./rollup.config.mjs",
     "start:webpack": "webpack serve",
     "start:vite": "vite"
   },
@@ -12,6 +13,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@rollup/plugin-node-resolve": "^15.0.1",
     "html-webpack-plugin": "^5.5.0",
     "rollup": "^3.10.0",
     "vite": "^4.0.3",

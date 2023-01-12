@@ -29,10 +29,9 @@ class ExperimentalPlugin {
   }
 
   async resolveId(context, source, importer, options) {
-    let customized = await this.#resolver.beforeResolve(
-      source,
-      dirname(importer)
-    );
+    let fromDir = importer ? dirname(importer) : undefined;
+
+    let customized = await this.#resolver.beforeResolve(source, fromDir);
 
     let result = await this.#handleCustomized(
       context,
@@ -54,10 +53,7 @@ class ExperimentalPlugin {
       return result;
     }
 
-    customized = await this.#resolver.fallbackResolve(
-      source,
-      dirname(importer)
-    );
+    customized = await this.#resolver.fallbackResolve(source, fromDir);
 
     result = await this.#handleCustomized(
       context,
