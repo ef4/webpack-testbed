@@ -1,22 +1,22 @@
 const path = require("path");
 
 /*
-  Establishing common API for customize resolving.
+  Establishing common API for custom resolving.
 
   Both hooks have the same signature and can return
    - undefined to not handle a request at all
    - `{ alias }` to redirect resolving toward a different importPath and/or fromFile
+    - alias contains one or both of importPath and fromDir (if you leave one off, it retains its original value)
    - `{ virtual }` to provide a module on the fly
 */
 
 exports.Resolver = class Resolver {
-  beforeResolve(original, fromFile) {
+  async beforeResolve(original, fromDir) {
     // demonstrate priority aliasing
     if (original === "#made-up-package") {
       return {
         alias: {
           importPath: "./made-up-package.js",
-          fromFile,
         },
       };
     }
@@ -33,23 +33,22 @@ exports.Resolver = class Resolver {
     }
 
     // demonstrate resolving from an alternate location
-    if (original === "co" && fromFile === path.resolve(__dirname, "src")) {
+    if (original === "co" && fromDir === path.resolve(__dirname, "src")) {
       return {
         alias: {
-          importPath: original,
-          fromFile: path.resolve(__dirname, "../embroider/package.json"),
+          fromDir: path.resolve(__dirname, "../embroider"),
         },
       };
     }
   }
 
-  fallbackResolve(original, fromFile) {
+  async fallbackResolve(original, fromDir) {
     // demonstrate fallback aliasing
     if (original.endsWith("1")) {
       return {
         alias: {
           importPath: original.replace(/1$/, "2"),
-          fromFile,
+          fromDir,
         },
       };
     }

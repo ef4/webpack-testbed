@@ -41,7 +41,7 @@ class ResolverPlugin {
       result = {
         alias: {
           importPath: result.virtual.filename,
-          fromFile: request.path,
+          fromDir: request.path,
         },
       };
     }
@@ -50,7 +50,7 @@ class ResolverPlugin {
       let newRequest = {
         ...request,
         request: result.alias.importPath,
-        path: result.alias.fromFile,
+        path: result.alias.fromDir,
         fullySpecified: false,
       };
       resolver.doResolve(
@@ -77,7 +77,10 @@ class ResolverPlugin {
     resolver
       .getHook("raw-resolve")
       .tapAsync("my-resolver-plugin", async (request, context, callback) => {
-        let result = this.resolver.beforeResolve(request.request, request.path);
+        let result = await this.resolver.beforeResolve(
+          request.request,
+          request.path
+        );
         this.#resolve(result, resolver, request, context, callback);
       });
 
@@ -94,7 +97,7 @@ class ResolverPlugin {
       // defaults (tapable assigned them stage 0 by default).
       { name: "my-resolver-plugin", stage: 10 },
       async (request, context, callback) => {
-        let result = this.resolver.fallbackResolve(
+        let result = await this.resolver.fallbackResolve(
           request.request,
           request.path
         );
