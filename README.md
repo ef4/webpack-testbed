@@ -8,8 +8,8 @@ resolver plugin for embroider.
   - this is what we're really doing for the activeAddons set and virtual peer deps. Better to leave the actual resolving to webpack and just change the importer.
   - this is also what we're doing for app tree merging,
 - [x] start adding vite too
-- [ ] continue moving the policy code from webpack.config.js to common.js
-- [ ] implement all the policy code in vite
+- [x] continue moving the policy code from webpack.config.js to common.js
+- [x] implement all the policy code in vite
 
 Nice to have, but seems unlikely without core feature support in webpack:
 
