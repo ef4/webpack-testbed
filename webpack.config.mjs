@@ -1,6 +1,7 @@
 import HtmlWebpackPlugin from "html-webpack-plugin";
 import VirtualModulesPlugin from "webpack-virtual-modules";
 import { Resolver } from "./common.mjs";
+import { dirname } from "path";
 
 class ExperimentalPlugin {
   apply(compiler) {
@@ -41,17 +42,21 @@ class ResolverPlugin {
       result = {
         alias: {
           importPath: result.virtual.filename,
-          fromDir: request.path,
+          fromFile: request.path,
         },
       };
     }
 
     if ("alias" in result) {
       let newRequest = {
-        ...request,
         request: result.alias.importPath ?? request.request,
-        path: result.alias.fromDir ?? request.path,
+        path: result.alias.fromFile
+          ? dirname(result.alias.fromFile)
+          : request.path,
         fullySpecified: false,
+        context: {
+          issuer: result.alias.fromFile ?? request.context.issuer,
+        },
       };
       resolver.doResolve(
         resolver.ensureHook("internal-resolve"),
@@ -79,7 +84,7 @@ class ResolverPlugin {
       .tapAsync("my-resolver-plugin", async (request, context, callback) => {
         let result = await this.resolver.beforeResolve(
           request.request,
-          request.path
+          request.context.issuer === "" ? undefined : request.context.issuer
         );
         this.#resolve(result, resolver, request, context, callback);
       });
@@ -99,7 +104,7 @@ class ResolverPlugin {
       async (request, context, callback) => {
         let result = await this.resolver.fallbackResolve(
           request.request,
-          request.path
+          request.context.issuer === "" ? undefined : request.context.issuer
         );
         this.#resolve(result, resolver, request, context, callback);
       }

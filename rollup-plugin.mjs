@@ -1,4 +1,3 @@
-import { dirname } from "path";
 import { Resolver } from "./common.mjs";
 
 const VIRTUAL_PREFIX = "\0embroider-virtual/";
@@ -19,7 +18,7 @@ class ExperimentalPlugin {
     if ("alias" in result) {
       return await context.resolve(
         result.alias.importPath ?? source,
-        result.alias.fromDir ? result.alias.fromDir + "/." : importer,
+        result.alias.fromFile ?? importer,
         {
           ...options,
           skipSelf: true,
@@ -29,9 +28,7 @@ class ExperimentalPlugin {
   }
 
   async resolveId(context, source, importer, options) {
-    let fromDir = importer ? dirname(importer) : undefined;
-
-    let customized = await this.#resolver.beforeResolve(source, fromDir);
+    let customized = await this.#resolver.beforeResolve(source, importer);
 
     let result = await this.#handleCustomized(
       context,
@@ -53,7 +50,7 @@ class ExperimentalPlugin {
       return result;
     }
 
-    customized = await this.#resolver.fallbackResolve(source, fromDir);
+    customized = await this.#resolver.fallbackResolve(source, importer);
 
     result = await this.#handleCustomized(
       context,
