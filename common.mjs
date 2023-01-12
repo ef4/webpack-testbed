@@ -1,4 +1,4 @@
-const path = require("path");
+import path from "path";
 
 /*
   Establishing common API for custom resolving.
@@ -10,7 +10,7 @@ const path = require("path");
    - `{ virtual }` to provide a module on the fly
 */
 
-exports.Resolver = class Resolver {
+export class Resolver {
   async beforeResolve(original, fromDir) {
     // demonstrate priority aliasing
     if (original === "#made-up-package") {
@@ -33,10 +33,13 @@ exports.Resolver = class Resolver {
     }
 
     // demonstrate resolving from an alternate location
-    if (original === "co" && fromDir === path.resolve(__dirname, "src")) {
+    if (
+      original === "co" &&
+      fromDir === new URL("src", import.meta.url).pathname
+    ) {
       return {
         alias: {
-          fromDir: path.resolve(__dirname, "../embroider"),
+          fromDir: new URL("../embroider", import.meta.url).pathname,
         },
       };
     }
@@ -53,4 +56,4 @@ exports.Resolver = class Resolver {
       };
     }
   }
-};
+}

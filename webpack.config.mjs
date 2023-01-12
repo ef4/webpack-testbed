@@ -1,6 +1,6 @@
-const HtmlWebpackPlugin = require("html-webpack-plugin");
-const VirtualModulesPlugin = require("webpack-virtual-modules");
-const { Resolver } = require("./common");
+import HtmlWebpackPlugin from "html-webpack-plugin";
+import VirtualModulesPlugin from "webpack-virtual-modules";
+import { Resolver } from "./common.mjs";
 
 class ExperimentalPlugin {
   apply(compiler) {
@@ -49,8 +49,8 @@ class ResolverPlugin {
     if ("alias" in result) {
       let newRequest = {
         ...request,
-        request: result.alias.importPath,
-        path: result.alias.fromDir,
+        request: result.alias.importPath ?? request.request,
+        path: result.alias.fromDir ?? request.path,
         fullySpecified: false,
       };
       resolver.doResolve(
@@ -107,7 +107,7 @@ class ResolverPlugin {
   }
 }
 
-module.exports = {
+export default {
   entry: "./src/index.js",
   mode: "development",
   plugins: [new HtmlWebpackPlugin(), new ExperimentalPlugin()],

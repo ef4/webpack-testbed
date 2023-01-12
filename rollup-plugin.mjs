@@ -1,5 +1,5 @@
 import { dirname } from "path";
-import { Resolver } from "./common";
+import { Resolver } from "./common.mjs";
 
 const VIRTUAL_PREFIX = "\0embroider-virtual/";
 

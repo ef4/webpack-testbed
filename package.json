@@ -13,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "html-webpack-plugin": "^5.5.0",
+    "rollup": "^3.10.0",
     "vite": "^4.0.3",
     "webpack": "^5.75.0",
     "webpack-dev-server": "^4.11.1",
