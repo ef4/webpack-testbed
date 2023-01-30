@@ -1,24 +1,106 @@
 import HtmlWebpackPlugin from "html-webpack-plugin";
-import VirtualModulesPlugin from "webpack-virtual-modules";
 import { Resolver } from "./common.mjs";
 import { dirname } from "path";
 
+// WIP notes:
+//
+// Assuming the new nmf resolve hook tap-wrapping works
+//  - we might now need the beforeResolve tap, since we control the whole
+//    lifecycle with one tap
+
+function ourVirtualLoader() {
+  let filename = this.loaders[this.loaderIndex].options;
+  return Resolver.virtualContent(filename);
+}
+// webpack can't use real ESM loaders and we have no build tooling in this demo
+// repo
+globalThis.ourVirtualLoader = ourVirtualLoader;
+
 class ExperimentalPlugin {
-  apply(compiler) {
-    if (!compiler.options.resolve.plugins) {
-      compiler.options.resolve.plugins = [];
+  constructor() {
+    this.resolver = new Resolver();
+  }
+
+  // NEXT: this will need to tell us if it actually changed anything, because in
+  // the fallback case we need to decide whether to loop around
+  #handle(result, state) {
+    if (!result) {
+      return;
     }
 
-    let vfs = compiler.options.plugins.find(
-      (i) => i instanceof VirtualModulesPlugin
+    if ("alias" in result) {
+      state.request = result.alias.importPath;
+      if (result.alias.fromFile) {
+        state.contextInfo.issuer = result.alias.fromFile;
+        state.context = dirname(result.rehome.fromFile);
+      }
+    } else if ("rehome" in result) {
+      state.contextInfo.issuer = result.rehome.fromFile;
+      state.context = dirname(result.rehome.fromFile);
+    } else if ("virtual" in result) {
+      state.request = `our-virtual-loader?${result.virtual.filename}!`;
+    } else {
+      throw new Error(`bug: unexpected result ${Object.keys(result)}`);
+    }
+  }
+
+  // this hook can return false to ignore the entire request and otherwise
+  // should mutate its input
+  #beforeResolve(state) {
+    if (!state.request && state.contextInfo.issuer) {
+      return;
+    }
+    this.#handle(
+      this.resolver.beforeResolve(state.request, state.contextInfo.issuer),
+      state
     );
-    if (!vfs) {
-      vfs = new VirtualModulesPlugin();
-      compiler.options.plugins.push(vfs);
-    }
+  }
 
-    let resolverPlugin = new ResolverPlugin(vfs);
-    compiler.options.resolve.plugins.push(resolverPlugin);
+  #resolve(defaultResolve, state, callback) {
+    let { request } = state;
+    defaultResolve(state, (err, result) => {
+      if (err) {
+        // NEXT call resolver.fallbackResolve here, and if it gets results loop
+        // back to try to the defaultResolve with them.
+        console.log(`SAW ERROR for ${request}`);
+        callback(err);
+      } else {
+        callback(null, result);
+      }
+    });
+  }
+
+  apply(compiler) {
+    if (!compiler.options.resolveLoader) {
+      compiler.options.resolveLoader = {};
+    }
+    if (!compiler.options.resolveLoader.alias) {
+      compiler.options.resolveLoader.alias = {};
+    }
+    compiler.options.resolveLoader.alias["our-virtual-loader"] = new URL(
+      "./webpack-virtual-loader",
+      import.meta.url
+    ).href.slice("file://".length);
+    compiler.hooks.normalModuleFactory.tap("my-experiment", (nmf) => {
+      nmf.hooks.beforeResolve.tap(
+        "my-experiment",
+        this.#beforeResolve.bind(this)
+      );
+
+      // Despite being absolutely riddled with way-too-powerful tap points,
+      // webpack still doesn't succeed in making it possible to provide a
+      // fallback to the default resolve hook in the NormalModuleFactory. So
+      // instead we will find the default behavior and call it from our own tap,
+      // giving us a chance to handle its failures.
+      let { fn: defaultResolve } = nmf.hooks.resolve.taps.find(
+        (t) => t.name === "NormalModuleFactory"
+      );
+
+      nmf.hooks.resolve.tapAsync(
+        { name: "my-experiment", stage: 50 },
+        this.#resolve.bind(this, defaultResolve)
+      );
+    });
   }
 }
 

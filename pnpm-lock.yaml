@@ -8,7 +8,6 @@ specifiers:
   webpack: ^5.75.0
   webpack-cli: ^5.0.1
   webpack-dev-server: ^4.11.1
-  webpack-virtual-modules: ^0.5.0
 
 dependencies:
   '@rollup/plugin-node-resolve': 15.0.1_rollup@3.10.0
@@ -17,7 +16,6 @@ dependencies:
   vite: 4.0.3
   webpack: 5.75.0_webpack-cli@5.0.1
   webpack-dev-server: 4.11.1_rjsyjcrmk25kqsjzwkvj3a2evq
-  webpack-virtual-modules: 0.5.0
 
 devDependencies:
   webpack-cli: 5.0.1_uaydpeuxkjjcxdbyfgk36cjdxi
@@ -2279,10 +2277,6 @@ packages:
   /webpack-sources/3.2.3:
     resolution: {integrity: sha512-/DyMEOrDgLKKIG0fmvtz+4dUX/3Ghozwgm6iPp8KRhvn+eQf9+Q7GWxVNMk3+uCPWfdXYC4ExGBckIXdFEfH1w==}
     engines: {node: '>=10.13.0'}
-
-  /webpack-virtual-modules/0.5.0:
-    resolution: {integrity: sha512-kyDivFZ7ZM0BVOUteVbDFhlRt7Ah/CSPwJdi8hBpkK7QLumUqdLtVfm/PX/hkcnrvr0i77fO5+TjZ94Pe+C9iw==}
-    dev: false
 
   /webpack/5.75.0_webpack-cli@5.0.1:
     resolution: {integrity: sha512-piaIaoVJlqMsPtX/+3KTTO6jfvrSYgauFVdt8cr9LTHKmcq/AMd4mhzsiP7ZF/PGRNPGA8336jldh9l2Kt2ogQ==}

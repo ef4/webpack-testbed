@@ -11,7 +11,14 @@ import { dirname } from "path";
 */
 
 export class Resolver {
-  async beforeResolve(original, fromFile) {
+  static virtualContent(filename) {
+    if (filename === "virtual-stuff/index.js") {
+      return 'export const stuff = "this is the stuff"';
+    }
+    throw new Error(`unexpected ${filename}`);
+  }
+
+  beforeResolve(original, fromFile) {
     // demonstrate priority aliasing
     if (original === "#made-up-package") {
       return {
@@ -27,7 +34,6 @@ export class Resolver {
       return {
         virtual: {
           filename: "virtual-stuff/index.js",
-          content: 'export const stuff = "this is the stuff"',
         },
       };
     }
@@ -38,7 +44,7 @@ export class Resolver {
       dirname(fromFile) === new URL("src", import.meta.url).pathname
     ) {
       return {
-        alias: {
+        rehome: {
           fromFile: new URL("../embroider/package.json", import.meta.url)
             .pathname,
         },
@@ -46,13 +52,12 @@ export class Resolver {
     }
   }
 
-  async fallbackResolve(original, fromFile) {
+  fallbackResolve(original, fromFile) {
     // demonstrate fallback aliasing
     if (original.endsWith("1")) {
       return {
         alias: {
           importPath: original.replace(/1$/, "2"),
-          fromFile,
         },
       };
     }
