@@ -50,6 +50,7 @@ export class Resolver {
         },
       };
     }
+    return { continue: true };
   }
 
   fallbackResolve(original, fromFile) {

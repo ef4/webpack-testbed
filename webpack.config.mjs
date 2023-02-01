@@ -2,12 +2,6 @@ import HtmlWebpackPlugin from "html-webpack-plugin";
 import { Resolver } from "./common.mjs";
 import { dirname } from "path";
 
-// WIP notes:
-//
-// Assuming the new nmf resolve hook tap-wrapping works
-//  - we might now need the beforeResolve tap, since we control the whole
-//    lifecycle with one tap
-
 function ourVirtualLoader() {
   let filename = this.loaders[this.loaderIndex].options;
   return Resolver.virtualContent(filename);
@@ -21,13 +15,7 @@ class ExperimentalPlugin {
     this.resolver = new Resolver();
   }
 
-  // NEXT: this will need to tell us if it actually changed anything, because in
-  // the fallback case we need to decide whether to loop around
   #handle(result, state) {
-    if (!result) {
-      return;
-    }
-
     if ("alias" in result) {
       state.request = result.alias.importPath;
       if (result.alias.fromFile) {
@@ -44,26 +32,29 @@ class ExperimentalPlugin {
     }
   }
 
-  // this hook can return false to ignore the entire request and otherwise
-  // should mutate its input
-  #beforeResolve(state) {
-    if (!state.request && state.contextInfo.issuer) {
-      return;
-    }
-    this.#handle(
-      this.resolver.beforeResolve(state.request, state.contextInfo.issuer),
-      state
-    );
-  }
-
   #resolve(defaultResolve, state, callback) {
-    let { request } = state;
+    if (state.request && state.contextInfo.issuer) {
+      let result = this.resolver.beforeResolve(
+        state.request,
+        state.contextInfo.issuer
+      );
+      if (!result.continue) {
+        this.#handle(result, state);
+      }
+    }
+
     defaultResolve(state, (err, result) => {
       if (err) {
-        // NEXT call resolver.fallbackResolve here, and if it gets results loop
-        // back to try to the defaultResolve with them.
-        console.log(`SAW ERROR for ${request}`);
-        callback(err);
+        let result = this.resolver.fallbackResolve(
+          state.request,
+          state.contextInfo.issuer
+        );
+        if (result.continue) {
+          callback(err);
+        } else {
+          this.#handle(result, state);
+          this.#resolve(defaultResolve, state, callback);
+        }
       } else {
         callback(null, result);
       }
@@ -82,11 +73,6 @@ class ExperimentalPlugin {
       import.meta.url
     ).href.slice("file://".length);
     compiler.hooks.normalModuleFactory.tap("my-experiment", (nmf) => {
-      nmf.hooks.beforeResolve.tap(
-        "my-experiment",
-        this.#beforeResolve.bind(this)
-      );
-
       // Despite being absolutely riddled with way-too-powerful tap points,
       // webpack still doesn't succeed in making it possible to provide a
       // fallback to the default resolve hook in the NormalModuleFactory. So
